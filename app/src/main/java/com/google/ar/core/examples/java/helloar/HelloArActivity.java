@@ -56,6 +56,10 @@ import com.google.ar.core.exceptions.UnavailableApkTooOldException;
 import com.google.ar.core.exceptions.UnavailableArcoreNotInstalledException;
 import com.google.ar.core.exceptions.UnavailableSdkTooOldException;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -95,7 +99,6 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
     private final PlaneRenderer mPlaneRenderer = new PlaneRenderer();
     private final PointCloudRenderer mPointCloud = new PointCloudRenderer();
     private TapHelper tapHelper;
-    private TextView textView ;
 
 
     // Temporary matrix allocated here to reduce number of allocations for each frame.
@@ -117,7 +120,6 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
 
         tapHelper = new TapHelper(/*context=*/ this);
         mSurfaceView.setOnTouchListener(tapHelper);
-        textView = (TextView)findViewById(R.id.poi_data);
 
         // Set up renderer.
         mSurfaceView.setPreserveEGLContextOnPause(true);
@@ -229,7 +231,8 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
 
         POIReadAsyncTask poiReadAsyncTask = new POIReadAsyncTask();
         //poiReadAsyncTask.execute("http://prod-places-poilayer-vip.flatns.net/poi-layer-web/poi-layer/api/place?ne=18.536650055818%2C73.856971250942&sw=18.525623003488%2C73.83126495974&key=a46f738a-b4e0-11e3-9f3b-425861b86ab6&&what=Company&lid=4");
-        poiReadAsyncTask.execute("http://10.198.83.137:8080/getpoi/hotel?&radius=10000&limit=25&lat=51.5001655&lon=-0.12702");
+       // poiReadAsyncTask.execute("http://10.198.83.137:8080/getpoi/hotel?&radius=10000&limit=25&lat=51.5001655&lon=-0.12702");
+        poiReadAsyncTask.execute("http://10.198.83.137:8080/getpoi/clinic?&radius=10000&limit=25&lat=51.5001655&lon=-0.12702");
     }
 
     @Override
@@ -511,10 +514,45 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
         @Override
         protected void onPostExecute(String result) {
             //    textView.setText(result);
-            textView.setText(result);
-            Log.i("XXXXXXXXXXXXXXXXXXXX :", result);
+
+            try {
+                JSONObject json = new JSONObject(result);
+                JSONArray pois = json.getJSONArray("pois");
+                for(int i=0; i<pois.length();i++){
+                    JSONObject poi = pois.getJSONObject(i).getJSONObject("poi");
+                    String poiName = poi.getString("name");
+                    JSONObject position = pois.getJSONObject(i).getJSONObject("position");
+                    Double latitude = position.getDouble("lat");
+                    Double longitude = position.getDouble("lon");
+                    updateAndAttachLocationMarker(poiName,latitude,longitude);
+                }
+                
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
         }
 
 
+    }
+
+
+    private void updateAndAttachLocationMarker(final String poiName, Double latitude, Double longitude){
+        LocationMarker currentPoi = new LocationMarker(
+                longitude.doubleValue(),
+                latitude.doubleValue(),
+                //new ImageRenderer("pyramid giza.jpg")
+                new AnnotationRenderer(poiName)
+        );
+        currentPoi.setOnTouchListener(new Runnable() {
+            @Override
+            public void run() {
+                Toast.makeText(HelloArActivity.this,
+                        "Touched : "+poiName, Toast.LENGTH_LONG).show();
+            }
+        });
+        currentPoi.setTouchableSize(1000);
+        locationScene.mLocationMarkers.add(
+                currentPoi
+        );
     }
 }
