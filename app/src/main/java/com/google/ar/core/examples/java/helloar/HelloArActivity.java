@@ -22,6 +22,7 @@ import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.security.NetworkSecurityPolicy;
 import android.support.design.widget.BaseTransientBottomBar;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
@@ -31,6 +32,7 @@ import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.ar.core.Anchor;
@@ -93,6 +95,8 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
     private final PlaneRenderer mPlaneRenderer = new PlaneRenderer();
     private final PointCloudRenderer mPointCloud = new PointCloudRenderer();
     private TapHelper tapHelper;
+    private TextView textView ;
+
 
     // Temporary matrix allocated here to reduce number of allocations for each frame.
     private final float[] mAnchorMatrix = new float[16];
@@ -113,6 +117,7 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
 
         tapHelper = new TapHelper(/*context=*/ this);
         mSurfaceView.setOnTouchListener(tapHelper);
+        textView = (TextView)findViewById(R.id.poi_data);
 
         // Set up renderer.
         mSurfaceView.setPreserveEGLContextOnPause(true);
@@ -216,6 +221,15 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
         );
         */
 
+
+        initiatePOIRetrieval();
+    }
+
+    private void initiatePOIRetrieval() {
+
+        POIReadAsyncTask poiReadAsyncTask = new POIReadAsyncTask();
+        //poiReadAsyncTask.execute("http://prod-places-poilayer-vip.flatns.net/poi-layer-web/poi-layer/api/place?ne=18.536650055818%2C73.856971250942&sw=18.525623003488%2C73.83126495974&key=a46f738a-b4e0-11e3-9f3b-425861b86ab6&&what=Company&lid=4");
+        poiReadAsyncTask.execute("http://10.198.83.137:8080/getpoi/hotel?&radius=10000&limit=25&lat=51.5001655&lon=-0.12702");
     }
 
     @Override
@@ -469,7 +483,6 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
     }
 
 
-
     private class POIReadAsyncTask extends AsyncTask<String, Void, String> {
         @Override
         protected String doInBackground(String... urls) {
@@ -497,7 +510,11 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
 
         @Override
         protected void onPostExecute(String result) {
-        //    textView.setText(result);
+            //    textView.setText(result);
+            textView.setText(result);
+            Log.i("XXXXXXXXXXXXXXXXXXXX :", result);
         }
+
+
     }
 }
